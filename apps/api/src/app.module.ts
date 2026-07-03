@@ -14,6 +14,7 @@ import { RagModule } from './rag/rag.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env', '../../.env'],
       validate: validateEnv,
     }),
     AuthModule,

@@ -11,7 +11,10 @@ export const envSchema = z.object({
     .enum(['openai', 'groq', 'together', 'openrouter', 'ollama'])
     .default('openai'),
   AI_API_KEY: z.string().optional(),
-  AI_BASE_URL: z.string().url().optional(),
+  AI_BASE_URL: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().url().optional(),
+  ),
   AI_MODEL: z.string().default('gpt-4o-mini'),
   AI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
 
