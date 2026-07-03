@@ -9,8 +9,11 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import type {
   ApiResponse,
@@ -37,6 +40,16 @@ export class DocumentsController {
     @Body() dto: CreateDocumentDto,
   ): Promise<ApiResponse<Document>> {
     const doc = await this.documentsService.create(user.id, dto, user.accessToken);
+    return { success: true, data: doc };
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async upload(
+    @CurrentUser() user: AuthenticatedUser,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<ApiResponse<Document>> {
+    const doc = await this.documentsService.createFromUpload(user.id, file, user.accessToken);
     return { success: true, data: doc };
   }
 

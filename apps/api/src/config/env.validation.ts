@@ -13,6 +13,11 @@ export const envSchema = z.object({
   AI_MODEL: z.string().default('gpt-4o-mini'),
   AI_FALLBACK_MODEL: z.string().optional(),
   AI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+  
+  // Optional override for Embeddings provider
+  AI_EMBEDDING_PROVIDER: z.enum(['openai', 'groq', 'together', 'openrouter', 'ollama']).optional(),
+  AI_EMBEDDING_API_KEY: z.string().optional(),
+  AI_EMBEDDING_BASE_URL: z.preprocess((val) => (val === '' ? undefined : val), z.string().url().optional()),
 
   // App
   PORT: z.coerce.number().default(4000),

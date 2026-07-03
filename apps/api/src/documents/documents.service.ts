@@ -45,6 +45,47 @@ export class DocumentsService {
     return doc;
   }
 
+  async createFromUpload(
+    userId: string,
+    file: Express.Multer.File,
+    accessToken: string,
+  ): Promise<Document> {
+    let content = '';
+
+    const extension = file.originalname.split('.').pop()?.toLowerCase();
+
+    if (extension === 'txt') {
+      content = file.buffer.toString('utf-8');
+    } else if (extension === 'pdf') {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+        const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
+        const parsed = await pdfParse(file.buffer);
+        content = parsed.text;
+      } catch (err: unknown) {
+        console.error('Failed to parse PDF:', err);
+        const errMsg = err instanceof Error ? err.message : 'Unknown error';
+        throw new Error(`Failed to extract text from PDF: ${errMsg}`);
+      }
+    } else {
+      throw new Error('Unsupported file type. Only .txt and .pdf are supported.');
+    }
+
+    if (!content.trim()) {
+      throw new Error('Extracted text is empty. The file may be empty or scanned/image-only.');
+    }
+
+    return this.create(
+      userId,
+      {
+        title: file.originalname,
+        content: content.trim(),
+        tags: ['upload'],
+      },
+      accessToken,
+    );
+  }
+
   async findAll(
     userId: string,
     accessToken: string,

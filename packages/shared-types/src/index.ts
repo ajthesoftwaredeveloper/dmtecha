@@ -63,6 +63,8 @@ export interface Message extends BaseEntity {
   role: 'user' | 'assistant' | 'system';
   content: string;
   sourceChunkIds?: string[];
+  promptTokens?: number;
+  completionTokens?: number;
 }
 
 // ============================================
@@ -170,3 +172,23 @@ export interface ChatResponseDto {
     similarity: number;
   }>;
 }
+
+/**
+ * Token usage metrics DTO.
+ */
+export interface UsageMetricsDto {
+  totalTokens: number;
+  promptTokens: number;
+  completionTokens: number;
+  conversationCount: number;
+  messageCount: number;
+}
+
+/**
+ * SSE stream event type.
+ */
+export type ChatStreamEvent =
+  | { type: 'sources'; chunks: NonNullable<ChatResponseDto['sourceChunks']> }
+  | { type: 'content'; delta: string }
+  | { type: 'done'; message: Message }
+  | { type: 'error'; message: string };

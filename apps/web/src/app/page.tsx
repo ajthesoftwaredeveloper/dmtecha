@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { AuthProvider } from '../components/AuthProvider';
 import { ChatInterface } from '../components/ChatInterface';
 import { DocumentManager } from '../components/DocumentManager';
+import { UsageMetrics } from '../components/UsageMetrics';
 
-type Tab = 'documents' | 'chat';
+type Tab = 'documents' | 'chat' | 'usage';
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<Tab>('chat');
@@ -34,6 +35,12 @@ export default function HomePage() {
               >
                 📄 Documents
               </button>
+              <button
+                className={`nav-tab ${activeTab === 'usage' ? 'nav-tab-active' : ''}`}
+                onClick={() => setActiveTab('usage')}
+              >
+                📊 Usage
+              </button>
             </div>
 
             <div className="nav-user">
@@ -47,8 +54,10 @@ export default function HomePage() {
           <main className="app-main">
             {activeTab === 'chat' ? (
               <ChatInterface accessToken={accessToken!} />
-            ) : (
+            ) : activeTab === 'documents' ? (
               <DocumentManager accessToken={accessToken!} />
+            ) : (
+              <UsageMetrics accessToken={accessToken!} />
             )}
           </main>
         </div>

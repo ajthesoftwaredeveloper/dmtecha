@@ -24,7 +24,8 @@ import {
  */
 @Injectable()
 export class AiService implements OnModuleInit {
-  private client!: OpenAI;
+  private chatClient!: OpenAI;
+  private embeddingClient!: OpenAI;
   private defaultModel!: string;
   private defaultEmbeddingModel!: string;
   private fallbackModel?: string;
@@ -39,10 +40,29 @@ export class AiService implements OnModuleInit {
     // Resolve base URL: custom override > provider default > OpenAI default
     const baseURL = customBaseUrl ?? PROVIDER_BASE_URLS[provider];
 
-    this.client = new OpenAI({
+    this.chatClient = new OpenAI({
       apiKey: apiKey || 'ollama', // Ollama doesn't need a real key
       ...(baseURL ? { baseURL } : {}),
       ...(provider === 'openrouter'
+        ? {
+            defaultHeaders: {
+              'HTTP-Referer': 'https://github.com/ajthesoftwaredeveloper/dmtecha',
+              'X-OpenRouter-Title': 'AI-Powered Knowledge Base',
+            },
+          }
+        : {}),
+    });
+
+    // Resolve embedding provider, key, and baseUrl, falling back to chat provider settings
+    const embedProvider = this.configService.get('AI_EMBEDDING_PROVIDER', { infer: true }) ?? provider;
+    const embedApiKey = this.configService.get('AI_EMBEDDING_API_KEY', { infer: true }) ?? apiKey;
+    const embedCustomBaseUrl = this.configService.get('AI_EMBEDDING_BASE_URL', { infer: true }) ?? customBaseUrl;
+    const embedBaseURL = embedCustomBaseUrl ?? PROVIDER_BASE_URLS[embedProvider];
+
+    this.embeddingClient = new OpenAI({
+      apiKey: embedApiKey || 'ollama',
+      ...(embedBaseURL ? { baseURL: embedBaseURL } : {}),
+      ...(embedProvider === 'openrouter'
         ? {
             defaultHeaders: {
               'HTTP-Referer': 'https://github.com/ajthesoftwaredeveloper/dmtecha',
@@ -57,7 +77,7 @@ export class AiService implements OnModuleInit {
     this.defaultEmbeddingModel = this.configService.get('AI_EMBEDDING_MODEL', { infer: true });
 
     console.warn(
-      `🤖 AI Service initialized: provider=${provider}, model=${this.defaultModel}, fallback=${String(this.fallbackModel)}, embeddings=${this.defaultEmbeddingModel}`,
+      `🤖 AI Service initialized: [Chat] provider=${provider}, model=${this.defaultModel}, fallback=${String(this.fallbackModel)} | [Embeddings] provider=${embedProvider}, model=${this.defaultEmbeddingModel}`,
     );
   }
 
@@ -67,7 +87,7 @@ export class AiService implements OnModuleInit {
   async chatCompletion(options: ChatCompletionOptions): Promise<ChatCompletionResult> {
     const model = options.model ?? this.defaultModel;
     try {
-      const response = await this.client.chat.completions.create({
+      const response = await this.chatClient.chat.completions.create({
         model,
         messages: options.messages,
         temperature: options.temperature ?? 0.7,
@@ -110,22 +130,20 @@ export class AiService implements OnModuleInit {
    * Generate a streaming chat completion.
    * Returns an async iterable of content deltas.
    */
-  async *chatCompletionStream(options: ChatCompletionOptions): AsyncIterable<string> {
+  async *chatCompletionStream(options: ChatCompletionOptions): AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> {
     const model = options.model ?? this.defaultModel;
     try {
-      const stream = await this.client.chat.completions.create({
+      const stream = await this.chatClient.chat.completions.create({
         model,
         messages: options.messages,
         temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens,
         stream: true,
+        stream_options: { include_usage: true }, // Returns token usage in the final chunk
       });
 
       for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (delta) {
-          yield delta;
-        }
+        yield chunk;
       }
     } catch (err) {
       if (this.fallbackModel && model !== this.fallbackModel) {
@@ -147,7 +165,7 @@ export class AiService implements OnModuleInit {
    * Generate embeddings for one or more text inputs.
    */
   async generateEmbeddings(options: EmbeddingOptions): Promise<EmbeddingResult> {
-    const response = await this.client.embeddings.create({
+    const response = await this.embeddingClient.embeddings.create({
       model: options.model ?? this.defaultEmbeddingModel,
       input: options.input,
       encoding_format: 'float',

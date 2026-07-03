@@ -1,13 +1,9 @@
 'use client';
 
-import type { Document, CreateDocumentDto, PaginatedResponse } from '@dmtecha/shared-types';
+import type { ApiResponse, Document, CreateDocumentDto, PaginatedResponse } from '@dmtecha/shared-types';
 import { useState, useCallback, useEffect } from 'react';
 
 const API_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000';
-
-interface Props {
-  accessToken: string;
-}
 
 async function apiFetch<T>(endpoint: string, token: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
@@ -32,6 +28,8 @@ export function DocumentManager({ accessToken }: Props) {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
   const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   const loadDocuments = useCallback(async () => {
     try {
@@ -103,6 +101,44 @@ export function DocumentManager({ accessToken }: Props) {
     }
   };
 
+  // Upload handler for PDF / TXT files
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+    const nameLower = file.name.toLowerCase();
+    if (!nameLower.endsWith('.txt') && !nameLower.endsWith('.pdf')) {
+      setError('Only .txt and .pdf files are supported.');
+      return;
+    }
+
+    setUploading(true);
+    setError('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`${API_URL}/documents/upload`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      });
+
+      const data = (await res.json()) as ApiResponse<Document>;
+      if (!data.success) {
+        throw new Error(data.error?.message ?? 'File upload failed');
+      }
+
+      await loadDocuments();
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to upload document';
+      setError(errMsg);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="documents-panel">
       <div className="documents-header">
@@ -122,6 +158,45 @@ export function DocumentManager({ accessToken }: Props) {
       </div>
 
       {error && <p className="error-message">{error}</p>}
+
+      {/* File Drag and Drop Upload Zone */}
+      {!showForm && (
+        <div
+          className={`upload-zone ${dragActive ? 'drag-active' : ''} ${uploading ? 'uploading' : ''}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragActive(true);
+          }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragActive(false);
+            if (e.dataTransfer.files?.[0]) {
+              void handleFileUpload(e.dataTransfer.files[0]);
+            }
+          }}
+        >
+          <input
+            type="file"
+            id="file-upload"
+            className="file-upload-input"
+            accept=".txt,.pdf"
+            disabled={uploading}
+            onChange={(e) => {
+              if (e.target.files?.[0]) {
+                void handleFileUpload(e.target.files[0]);
+              }
+            }}
+          />
+          <label htmlFor="file-upload" className="file-upload-label">
+            {uploading ? (
+              <span className="upload-text">⏳ Extracting text & running RAG pipeline...</span>
+            ) : (
+              <span className="upload-text">📁 Drag & drop or <strong>click to upload PDF or TXT</strong></span>
+            )}
+          </label>
+        </div>
+      )}
 
       {showForm && (
         <form onSubmit={handleSubmit} className="document-form">
@@ -158,7 +233,7 @@ export function DocumentManager({ accessToken }: Props) {
         <div className="loading-state">Loading documents...</div>
       ) : documents.length === 0 ? (
         <div className="empty-state">
-          <p>No documents yet. Create one to get started!</p>
+          <p>No documents yet. Create one or upload a file to get started!</p>
         </div>
       ) : (
         <div className="documents-list">
@@ -198,4 +273,8 @@ export function DocumentManager({ accessToken }: Props) {
       )}
     </div>
   );
+}
+
+interface Props {
+  accessToken: string;
 }
