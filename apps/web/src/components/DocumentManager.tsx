@@ -45,7 +45,9 @@ export function DocumentManager({ accessToken }: Props) {
     }
   }, [accessToken]);
 
-  useEffect(() => { void loadDocuments(); }, [loadDocuments]);
+  useEffect(() => {
+    void loadDocuments();
+  }, [loadDocuments]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +56,10 @@ export function DocumentManager({ accessToken }: Props) {
       const dto: CreateDocumentDto = {
         title,
         content,
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+        tags: tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
       };
 
       if (editingDoc) {
@@ -104,7 +109,13 @@ export function DocumentManager({ accessToken }: Props) {
         <h2>📄 Documents</h2>
         <button
           className="btn-primary"
-          onClick={() => { setShowForm(!showForm); setEditingDoc(null); setTitle(''); setContent(''); setTags(''); }}
+          onClick={() => {
+            setShowForm(!showForm);
+            setEditingDoc(null);
+            setTitle('');
+            setContent('');
+            setTags('');
+          }}
         >
           {showForm ? '✕ Cancel' : '+ New Document'}
         </button>
@@ -156,8 +167,16 @@ export function DocumentManager({ accessToken }: Props) {
               <div className="document-card-header">
                 <h3>{doc.title}</h3>
                 <div className="document-actions">
-                  <button onClick={() => handleEdit(doc)} className="btn-ghost" title="Edit">✏️</button>
-                  <button onClick={() => void handleDelete(doc.id)} className="btn-ghost btn-danger" title="Delete">🗑️</button>
+                  <button onClick={() => handleEdit(doc)} className="btn-ghost" title="Edit">
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => void handleDelete(doc.id)}
+                    className="btn-ghost btn-danger"
+                    title="Delete"
+                  >
+                    🗑️
+                  </button>
                 </div>
               </div>
               <p className="document-content-preview">
@@ -166,13 +185,13 @@ export function DocumentManager({ accessToken }: Props) {
               {doc.tags.length > 0 && (
                 <div className="document-tags">
                   {doc.tags.map((tag) => (
-                    <span key={tag} className="tag">{tag}</span>
+                    <span key={tag} className="tag">
+                      {tag}
+                    </span>
                   ))}
                 </div>
               )}
-              <time className="document-date">
-                {new Date(doc.updatedAt).toLocaleDateString()}
-              </time>
+              <time className="document-date">{new Date(doc.updatedAt).toLocaleDateString()}</time>
             </div>
           ))}
         </div>

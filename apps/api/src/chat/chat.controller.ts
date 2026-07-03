@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 
 import type { ApiResponse, ChatRequestDto, ChatResponseDto } from '@dmtecha/shared-types';
 
@@ -28,9 +28,7 @@ export class ChatController {
   }
 
   @Get('conversations')
-  async getConversations(
-    @CurrentUser() user: AuthenticatedUser,
-  ): Promise<ApiResponse<unknown[]>> {
+  async getConversations(@CurrentUser() user: AuthenticatedUser): Promise<ApiResponse<unknown[]>> {
     const conversations = await this.chatService.getConversations(user.id);
     return { success: true, data: conversations };
   }

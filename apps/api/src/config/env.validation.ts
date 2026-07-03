@@ -7,15 +7,11 @@ export const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
   // AI Provider
-  AI_PROVIDER: z
-    .enum(['openai', 'groq', 'together', 'openrouter', 'ollama'])
-    .default('openai'),
+  AI_PROVIDER: z.enum(['openai', 'groq', 'together', 'openrouter', 'ollama']).default('openai'),
   AI_API_KEY: z.string().optional(),
-  AI_BASE_URL: z.preprocess(
-    (val) => (val === '' ? undefined : val),
-    z.string().url().optional(),
-  ),
+  AI_BASE_URL: z.preprocess((val) => (val === '' ? undefined : val), z.string().url().optional()),
   AI_MODEL: z.string().default('gpt-4o-mini'),
+  AI_FALLBACK_MODEL: z.string().optional(),
   AI_EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
 
   // App

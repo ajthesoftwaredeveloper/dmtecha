@@ -36,6 +36,7 @@ export class SupabaseConfigService {
     const url = this.configService.get('SUPABASE_URL', { infer: true });
     const anonKey = this.configService.get('SUPABASE_ANON_KEY', { infer: true });
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return createClient(url, anonKey, {
       global: {
         headers: {

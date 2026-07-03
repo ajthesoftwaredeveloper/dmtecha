@@ -49,7 +49,11 @@ export function ChatInterface({ accessToken }: Props) {
         }),
       });
 
-      const data = (await res.json()) as { success: boolean; data: ChatResponseDto; error?: { message: string } };
+      const data = (await res.json()) as {
+        success: boolean;
+        data: ChatResponseDto;
+        error?: { message: string };
+      };
 
       if (!data.success) {
         throw new Error(data.error?.message ?? 'Chat request failed');
@@ -97,15 +101,16 @@ export function ChatInterface({ accessToken }: Props) {
           <div className="chat-empty">
             <div className="chat-empty-icon">🧠</div>
             <h3>Ask anything about your documents</h3>
-            <p>Your AI assistant uses RAG to search your knowledge base and provide informed answers with source citations.</p>
+            <p>
+              Your AI assistant uses RAG to search your knowledge base and provide informed answers
+              with source citations.
+            </p>
           </div>
         )}
 
         {messages.map((msg, i) => (
           <div key={i} className={`chat-message chat-message-${msg.role}`}>
-            <div className="chat-message-avatar">
-              {msg.role === 'user' ? '👤' : '🤖'}
-            </div>
+            <div className="chat-message-avatar">{msg.role === 'user' ? '👤' : '🤖'}</div>
             <div className="chat-message-content">
               <div className="chat-message-text">{msg.content}</div>
               {msg.sourceChunks && msg.sourceChunks.length > 0 && (
@@ -140,7 +145,9 @@ export function ChatInterface({ accessToken }: Props) {
             <div className="chat-message-avatar">🤖</div>
             <div className="chat-message-content">
               <div className="chat-typing">
-                <span></span><span></span><span></span>
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
             </div>
           </div>

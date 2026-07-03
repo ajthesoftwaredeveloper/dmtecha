@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import type {
   Document,
@@ -78,7 +75,7 @@ export class DocumentsService {
     const total = count ?? 0;
 
     return {
-      items: (data ?? []).map(this.mapToDocument),
+      items: (data ?? []).map((row) => this.mapToDocument(row)),
       total,
       page,
       pageSize,

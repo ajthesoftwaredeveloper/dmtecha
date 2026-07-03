@@ -15,11 +15,7 @@ export class ChunkingService {
   /**
    * Split text into overlapping chunks.
    */
-  chunk(
-    text: string,
-    chunkSize = this.defaultChunkSize,
-    overlap = this.defaultOverlap,
-  ): string[] {
+  chunk(text: string, chunkSize = this.defaultChunkSize, overlap = this.defaultOverlap): string[] {
     if (!text.trim()) return [];
     if (text.length <= chunkSize) return [text.trim()];
 

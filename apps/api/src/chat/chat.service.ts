@@ -29,7 +29,7 @@ export class ChatService {
     userId: string,
     message: string,
     conversationId?: string,
-    accessToken?: string,
+    _accessToken?: string,
   ): Promise<ChatResponseDto> {
     const supabase = this.supabaseConfig.getAdminClient();
 
@@ -55,16 +55,19 @@ export class ChatService {
 
     // 3. Retrieve relevant context chunks
     const sourceChunks = await this.ragService.searchSimilarChunks(message, userId, {
-      matchThreshold: 0.5,
+      matchThreshold: 0.3,
       matchCount: 5,
     });
 
     // 4. Build context-augmented prompt
-    const contextText = sourceChunks.length > 0
-      ? sourceChunks
-          .map((chunk, i) => `[Source ${String(i + 1)}: ${chunk.documentTitle}]\n${chunk.content}`)
-          .join('\n\n')
-      : '';
+    const contextText =
+      sourceChunks.length > 0
+        ? sourceChunks
+            .map(
+              (chunk, i) => `[Source ${String(i + 1)}: ${chunk.documentTitle}]\n${chunk.content}`,
+            )
+            .join('\n\n')
+        : '';
 
     const systemPrompt = `You are a helpful AI assistant for a knowledge base. Answer questions based on the provided context documents. If the context doesn't contain relevant information, say so honestly. Always cite which source documents you used.
 
@@ -78,15 +81,14 @@ ${contextText ? `## Relevant Context:\n\n${contextText}` : 'No relevant document
       .order('created_at', { ascending: true })
       .limit(10);
 
-    const history: ChatMessage[] = ((historyData as Array<Record<string, unknown>>) ?? []).map((m) => ({
-      role: m['role'] as 'user' | 'assistant' | 'system',
-      content: m['content'] as string,
-    }));
+    const history: ChatMessage[] = ((historyData as Array<Record<string, unknown>>) ?? []).map(
+      (m) => ({
+        role: m['role'] as 'user' | 'assistant' | 'system',
+        content: m['content'] as string,
+      }),
+    );
 
-    const messages: ChatMessage[] = [
-      { role: 'system', content: systemPrompt },
-      ...history,
-    ];
+    const messages: ChatMessage[] = [{ role: 'system', content: systemPrompt }, ...history];
 
     // 6. Generate AI response
     const aiResult = await this.aiService.chatCompletion({ messages, temperature: 0.3 });
@@ -135,7 +137,7 @@ ${contextText ? `## Relevant Context:\n\n${contextText}` : 'No relevant document
   /**
    * Get all conversations for a user.
    */
-  async getConversations(userId: string) {
+  async getConversations(userId: string): Promise<Record<string, unknown>[]> {
     const supabase = this.supabaseConfig.getAdminClient();
 
     const { data, error } = await supabase
@@ -145,13 +147,13 @@ ${contextText ? `## Relevant Context:\n\n${contextText}` : 'No relevant document
       .order('updated_at', { ascending: false });
 
     if (error) throw new Error(`Failed to fetch conversations: ${error.message}`);
-    return data ?? [];
+    return (data ?? []) as Record<string, unknown>[];
   }
 
   /**
    * Get messages for a conversation.
    */
-  async getMessages(conversationId: string, userId: string) {
+  async getMessages(conversationId: string, userId: string): Promise<Record<string, unknown>[]> {
     const supabase = this.supabaseConfig.getAdminClient();
 
     // Verify ownership
@@ -171,6 +173,6 @@ ${contextText ? `## Relevant Context:\n\n${contextText}` : 'No relevant document
       .order('created_at', { ascending: true });
 
     if (error) throw new Error(`Failed to fetch messages: ${error.message}`);
-    return data ?? [];
+    return (data ?? []) as Record<string, unknown>[];
   }
 }

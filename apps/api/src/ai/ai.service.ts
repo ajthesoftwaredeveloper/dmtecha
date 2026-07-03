@@ -6,7 +6,6 @@ import type { EnvConfig } from '../config/env.validation';
 
 import {
   PROVIDER_BASE_URLS,
-  type AiProvider,
   type ChatCompletionOptions,
   type ChatCompletionResult,
   type EmbeddingOptions,
@@ -28,11 +27,12 @@ export class AiService implements OnModuleInit {
   private client!: OpenAI;
   private defaultModel!: string;
   private defaultEmbeddingModel!: string;
+  private fallbackModel?: string;
 
   constructor(private readonly configService: ConfigService<EnvConfig, true>) {}
 
   onModuleInit(): void {
-    const provider = this.configService.get('AI_PROVIDER', { infer: true }) as AiProvider;
+    const provider = this.configService.get('AI_PROVIDER', { infer: true });
     const apiKey = this.configService.get('AI_API_KEY', { infer: true }) ?? '';
     const customBaseUrl = this.configService.get('AI_BASE_URL', { infer: true });
 
@@ -42,13 +42,22 @@ export class AiService implements OnModuleInit {
     this.client = new OpenAI({
       apiKey: apiKey || 'ollama', // Ollama doesn't need a real key
       ...(baseURL ? { baseURL } : {}),
+      ...(provider === 'openrouter'
+        ? {
+            defaultHeaders: {
+              'HTTP-Referer': 'https://github.com/ajthesoftwaredeveloper/dmtecha',
+              'X-OpenRouter-Title': 'AI-Powered Knowledge Base',
+            },
+          }
+        : {}),
     });
 
     this.defaultModel = this.configService.get('AI_MODEL', { infer: true });
+    this.fallbackModel = this.configService.get('AI_FALLBACK_MODEL', { infer: true });
     this.defaultEmbeddingModel = this.configService.get('AI_EMBEDDING_MODEL', { infer: true });
 
     console.warn(
-      `🤖 AI Service initialized: provider=${provider}, model=${this.defaultModel}, embeddings=${this.defaultEmbeddingModel}`,
+      `🤖 AI Service initialized: provider=${provider}, model=${this.defaultModel}, fallback=${String(this.fallbackModel)}, embeddings=${this.defaultEmbeddingModel}`,
     );
   }
 
@@ -56,51 +65,80 @@ export class AiService implements OnModuleInit {
    * Generate a chat completion.
    */
   async chatCompletion(options: ChatCompletionOptions): Promise<ChatCompletionResult> {
-    const response = await this.client.chat.completions.create({
-      model: options.model ?? this.defaultModel,
-      messages: options.messages,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens,
-      stream: false,
-    });
+    const model = options.model ?? this.defaultModel;
+    try {
+      const response = await this.client.chat.completions.create({
+        model,
+        messages: options.messages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens,
+        stream: false,
+      });
 
-    const choice = response.choices[0];
-    if (!choice?.message?.content) {
-      throw new Error('No content in AI response');
+      const choice = response.choices[0];
+      if (!choice?.message?.content) {
+        throw new Error('No content in AI response');
+      }
+
+      return {
+        content: choice.message.content,
+        model: response.model,
+        usage: response.usage
+          ? {
+              promptTokens: response.usage.prompt_tokens,
+              completionTokens: response.usage.completion_tokens,
+              totalTokens: response.usage.total_tokens,
+            }
+          : undefined,
+      };
+    } catch (err) {
+      if (this.fallbackModel && model !== this.fallbackModel) {
+        console.warn(
+          `⚠️ Chat completion failed with model ${model}. Retrying with fallback model ${this.fallbackModel}... Error:`,
+          err,
+        );
+        return this.chatCompletion({
+          ...options,
+          model: this.fallbackModel,
+        });
+      }
+      throw err;
     }
-
-    return {
-      content: choice.message.content,
-      model: response.model,
-      usage: response.usage
-        ? {
-            promptTokens: response.usage.prompt_tokens,
-            completionTokens: response.usage.completion_tokens,
-            totalTokens: response.usage.total_tokens,
-          }
-        : undefined,
-    };
   }
 
   /**
    * Generate a streaming chat completion.
    * Returns an async iterable of content deltas.
    */
-  async *chatCompletionStream(
-    options: ChatCompletionOptions,
-  ): AsyncIterable<string> {
-    const stream = await this.client.chat.completions.create({
-      model: options.model ?? this.defaultModel,
-      messages: options.messages,
-      temperature: options.temperature ?? 0.7,
-      max_tokens: options.maxTokens,
-      stream: true,
-    });
+  async *chatCompletionStream(options: ChatCompletionOptions): AsyncIterable<string> {
+    const model = options.model ?? this.defaultModel;
+    try {
+      const stream = await this.client.chat.completions.create({
+        model,
+        messages: options.messages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens,
+        stream: true,
+      });
 
-    for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content;
-      if (delta) {
-        yield delta;
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (delta) {
+          yield delta;
+        }
+      }
+    } catch (err) {
+      if (this.fallbackModel && model !== this.fallbackModel) {
+        console.warn(
+          `⚠️ Chat completion stream failed with model ${model}. Retrying with fallback model ${this.fallbackModel}... Error:`,
+          err,
+        );
+        yield* this.chatCompletionStream({
+          ...options,
+          model: this.fallbackModel,
+        });
+      } else {
+        throw err;
       }
     }
   }
@@ -112,6 +150,7 @@ export class AiService implements OnModuleInit {
     const response = await this.client.embeddings.create({
       model: options.model ?? this.defaultEmbeddingModel,
       input: options.input,
+      encoding_format: 'float',
     });
 
     return {

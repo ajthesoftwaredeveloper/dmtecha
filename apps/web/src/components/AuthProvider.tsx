@@ -21,7 +21,11 @@ async function authFetch<T>(endpoint: string, body: unknown): Promise<T> {
   return data.data;
 }
 
-export function AuthProvider({ children }: { children: (auth: AuthState & { signOut: () => void }) => React.ReactNode }) {
+export function AuthProvider({
+  children,
+}: {
+  children: (auth: AuthState & { signOut: () => void }) => React.ReactNode;
+}) {
   const [auth, setAuth] = useState<AuthState>({ user: null, accessToken: null });
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -35,7 +39,9 @@ export function AuthProvider({ children }: { children: (auth: AuthState & { sign
     if (stored) {
       try {
         setAuth(JSON.parse(stored) as AuthState);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   }, []);
 
@@ -115,7 +121,10 @@ export function AuthProvider({ children }: { children: (auth: AuthState & { sign
           {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
           <button
             type="button"
-            onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}
+            onClick={() => {
+              setMode(mode === 'signin' ? 'signup' : 'signin');
+              setError('');
+            }}
             className="auth-switch-button"
           >
             {mode === 'signin' ? 'Sign Up' : 'Sign In'}
