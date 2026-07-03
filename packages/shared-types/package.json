@@ -1,0 +1,21 @@
+{
+  "name": "@dmtecha/shared-types",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ --ext .ts"
+  },
+  "devDependencies": {
+    "@dmtecha/eslint-config": "workspace:*",
+    "@dmtecha/prettier-config": "workspace:*",
+    "eslint": "^8.57.0",
+    "typescript": "^5.7.0"
+  },
+  "prettier": "@dmtecha/prettier-config"
+}

@@ -1,0 +1,15 @@
+import { Controller, Get } from '@nestjs/common';
+
+import type { ApiResponse } from '@dmtecha/shared-types';
+
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get('health')
+  getHealth(): ApiResponse<{ status: string; timestamp: string }> {
+    return this.appService.getHealth();
+  }
+}

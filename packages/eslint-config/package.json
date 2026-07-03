@@ -1,0 +1,14 @@
+{
+  "name": "@dmtecha/eslint-config",
+  "version": "0.0.0",
+  "private": true,
+  "files": ["base.js", "next.js", "nest.js"],
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.32.0",
+    "@typescript-eslint/parser": "^8.32.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.0",
+    "eslint-config-prettier": "^10.1.0",
+    "eslint-plugin-import": "^2.31.0"
+  }
+}

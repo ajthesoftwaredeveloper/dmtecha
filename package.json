@@ -1,0 +1,24 @@
+{
+  "name": "dmtecha",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "setup": "pnpm install",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "prettier": "^3.5.0",
+    "@dmtecha/prettier-config": "workspace:*"
+  },
+  "prettier": "@dmtecha/prettier-config",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
