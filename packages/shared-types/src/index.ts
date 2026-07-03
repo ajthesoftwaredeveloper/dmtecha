@@ -19,6 +19,15 @@ export interface User extends BaseEntity {
 }
 
 /**
+ * User profile from the profiles table.
+ */
+export interface UserProfile {
+  id: string;
+  email: string;
+  fullName: string;
+}
+
+/**
  * Document stored in the knowledge base.
  */
 export interface Document extends BaseEntity {
@@ -56,6 +65,10 @@ export interface Message extends BaseEntity {
   sourceChunkIds?: string[];
 }
 
+// ============================================
+// API Response Types
+// ============================================
+
 /**
  * API response wrapper for consistent error handling.
  */
@@ -80,6 +93,40 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+// ============================================
+// Auth DTOs
+// ============================================
+
+/**
+ * Sign up request.
+ */
+export interface SignUpDto {
+  email: string;
+  password: string;
+  fullName?: string;
+}
+
+/**
+ * Sign in request.
+ */
+export interface SignInDto {
+  email: string;
+  password: string;
+}
+
+/**
+ * Auth response with tokens.
+ */
+export interface AuthResponseDto {
+  user: UserProfile;
+  accessToken: string;
+  refreshToken: string;
+}
+
+// ============================================
+// Document DTOs
+// ============================================
+
 /**
  * Create document request DTO.
  */
@@ -97,6 +144,10 @@ export interface UpdateDocumentDto {
   content?: string;
   tags?: string[];
 }
+
+// ============================================
+// Chat DTOs
+// ============================================
 
 /**
  * Chat request DTO.
