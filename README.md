@@ -5,7 +5,8 @@ A production-ready, high-performance, and feature-rich AI-Powered Knowledge Base
 ---
 
 ## 🎥 Loom Walkthrough
-*   **Walkthrough Recording:** *[Insert Loom Link Here]*
+
+- **Walkthrough Recording:** https://loom.com/share/d27ec1e06d244b6fb5d01ca4458863ca
 
 ---
 
@@ -14,8 +15,8 @@ A production-ready, high-performance, and feature-rich AI-Powered Knowledge Base
 1.  **Monorepo DX**: Streamlined Turborepo pipelines (`build`, `dev`, `lint`, `typecheck`) with pnpm workspaces. A single command (`pnpm setup`) installs all dependencies and builds workspace packages in topological order.
 2.  **Strict Security & Multi-Tenant Data Isolation**: Row-Level Security (RLS) is fully enabled on Supabase. Frontend operations are scoped strictly using the user's Supabase JWT token. Server-side writes (like embedding chunk inserts) bypass RLS using the admin `service_role` client to prevent unauthorized write-access to embeddings.
 3.  **Intelligent RAG Pipeline**:
-    *   **Chunking Strategy**: Splitting documents by paragraph or sentence boundaries first, falling back to word limits, with configurable chunk size (1000 characters) and overlap (200 characters).
-    *   **Decoupled AI Abstraction**: Completely independent configurations for Chat Completions and Embeddings via `.env`, allowing hybrid models (e.g., Groq for lightning-fast completions + Together AI or OpenAI for embeddings).
+    - **Chunking Strategy**: Splitting documents by paragraph or sentence boundaries first, falling back to word limits, with configurable chunk size (1000 characters) and overlap (200 characters).
+    - **Decoupled AI Abstraction**: Completely independent configurations for Chat Completions and Embeddings via `.env`, allowing hybrid models (e.g., Groq for lightning-fast completions + Together AI or OpenAI for embeddings).
 4.  **Real-Time AI Response Streaming**: Implemented Server-Sent Events (SSE) streaming (`POST /chat/stream`) yielding instant token-by-token rendering.
 5.  **Interactive Conversation Sidebar**: Full conversation management in the UI with a persistent sidebar loaded from the database, allowing users to restore past sessions or delete chats.
 6.  **PDF & TXT File Uploads**: Drag-and-drop document upload interface with background text extraction (`pdf-parse`) and RAG indexing.
@@ -26,19 +27,24 @@ A production-ready, high-performance, and feature-rich AI-Powered Knowledge Base
 ## 🛠️ Setup & Local Running Instructions
 
 ### Prerequisites
-*   **Node.js**: `v20` (pinned via `.nvmrc`)
-*   **pnpm**: `^9.x`
-*   **Supabase Database**: A PostgreSQL database with the `pgvector` and `uuid-ossp` extensions enabled.
+
+- **Node.js**: `v20` (pinned via `.nvmrc`)
+- **pnpm**: `^9.x`
+- **Supabase Database**: A PostgreSQL database with the `pgvector` and `uuid-ossp` extensions enabled.
 
 ### 1. Database Migration Setup
+
 Run the migrations in order against your Supabase database (either via Supabase CLI or using the SQL Editor):
+
 1.  `apps/api/supabase/migrations/00001_initial_schema.sql` (Creates profiles, documents, chunks, conversations, messages, GIN index on tags, and `match_document_chunks` RPC).
 2.  `apps/api/supabase/migrations/00002_rls_policies.sql` (Enables and secures RLS policies).
 3.  `apps/api/supabase/migrations/00003_change_vector_dimension_to_2048.sql` (Drops the 1536 HNSW index and configures vector dimension to `2048` to support larger embedding models).
 4.  `apps/api/supabase/migrations/00004_add_token_tracking.sql` (Adds `prompt_tokens` and `completion_tokens` fields to the `messages` table).
 
 ### 2. Configure Environment Variables
+
 Create a `.env` file in the root directory:
+
 ```bash
 # Supabase Configuration
 SUPABASE_URL=https://your-project.supabase.co
@@ -68,6 +74,7 @@ CORS_ORIGIN=http://localhost:3000
 ```
 
 ### 3. Run the Monorepo
+
 ```bash
 # Install dependencies & build packages
 pnpm setup
@@ -81,17 +88,20 @@ pnpm dev
 ## 📐 Architectural Decisions & Tech Justifications
 
 ### Monorepo Structure
-*   **Turborepo**: Enables caching of builds and tasks. If shared types haven't changed, builds are skipped, cutting compilation times.
-*   **Shared Packages**: Domain-driven typing (`@dmtecha/shared-types`) ensures compile-time synchronization of API request/response payloads, and common helpers live in `@dmtecha/utils`.
+
+- **Turborepo**: Enables caching of builds and tasks. If shared types haven't changed, builds are skipped, cutting compilation times.
+- **Shared Packages**: Domain-driven typing (`@dmtecha/shared-types`) ensures compile-time synchronization of API request/response payloads, and common helpers live in `@dmtecha/utils`.
 
 ### Database Schema Design
-*   **Multi-tenant Isolation**: RLS policies restrict all documents, conversations, and messages queries to the authenticated user (`auth.uid() = user_id`).
-*   **Service Role for Vector Chunking**: Users should never have direct write permission on `document_chunks`. Chunks are written server-side via the admin client (`service_role`) to prevent embedding tampering.
-*   **GIN Indexing**: Tag filtering queries run efficiently using a GIN index on the `tags` array column.
+
+- **Multi-tenant Isolation**: RLS policies restrict all documents, conversations, and messages queries to the authenticated user (`auth.uid() = user_id`).
+- **Service Role for Vector Chunking**: Users should never have direct write permission on `document_chunks`. Chunks are written server-side via the admin client (`service_role`) to prevent embedding tampering.
+- **GIN Indexing**: Tag filtering queries run efficiently using a GIN index on the `tags` array column.
 
 ### RAG Strategy
-*   **Flat Vector Similarity (Cosine Similarity)**: In `00003_change_vector_dimension_to_2048.sql`, we transitioned the embedding column to 2048 dimensions to support next-gen dense embedding models. Since `pgvector` limits index creation to $\le 2000$ dimensions, similarity queries perform a flat scan. Flat scans provide 100% accuracy and execute in milliseconds for typical knowledge bases.
-*   **Paragraph-Sentence Boundary Split**: Instead of arbitrary character splits which sever contexts, `ChunkingService` splits text on double newlines or punctuation (`.`, `!`, `?`), ensuring chunks preserve complete semantic phrases.
+
+- **Flat Vector Similarity (Cosine Similarity)**: In `00003_change_vector_dimension_to_2048.sql`, we transitioned the embedding column to 2048 dimensions to support next-gen dense embedding models. Since `pgvector` limits index creation to $\le 2000$ dimensions, similarity queries perform a flat scan. Flat scans provide 100% accuracy and execute in milliseconds for typical knowledge bases.
+- **Paragraph-Sentence Boundary Split**: Instead of arbitrary character splits which sever contexts, `ChunkingService` splits text on double newlines or punctuation (`.`, `!`, `?`), ensuring chunks preserve complete semantic phrases.
 
 ---
 
@@ -100,6 +110,7 @@ pnpm dev
 The AI client relies on the universal **OpenAI Node SDK**. You can swap models, completions providers, or embedding generators purely via the `.env` configuration.
 
 ### Provider Details:
+
 1.  **OpenAI**:
     ```bash
     AI_PROVIDER=openai
