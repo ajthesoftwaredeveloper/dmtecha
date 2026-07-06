@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
+    "prebuild": "pnpm --filter @dmtecha/shared-types build && pnpm --filter @dmtecha/utils build",
     "build": "next build",
     "start": "next start",
     "lint": "eslint src/ --ext .ts,.tsx",
